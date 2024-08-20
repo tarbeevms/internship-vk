@@ -6,6 +6,7 @@
 Для аутентификации используется JWT-токен. У токена есть время действия (выдается на 3 минуты), по истечению сессия удаляется и необходимо заново авторизоваться. Регистрация не предусмотрена, существует только один пользователь по умолчанию (`username: admin, password: presale`).<br>
 Сервис предоставляет API для входа, записи и чтения данных, соответственно по `/api/login`, `/api/write`, `/api/read`.<br>
 Все сессии, пользователи и KV хранятся в Tarantool.
+Реализован паттерн репозиторий (разделенные слои репозитория, логики, и хендлеров).
 
 ## 2. Предварительные требования
 
@@ -70,7 +71,13 @@ Content-Type: application/json
     "status": "Failed to create (rewrite) session"
 }
 ```
-### 1. Запись (перезапись) данных (POST /api/write)
+При попытке отправки ззапроса к выключенной БД получим ошибку, статус `401 Unauthorized`
+```json
+{
+    "status": "using closed connection (0x4001)"
+}
+```
+### 2. Запись (перезапись) данных (POST /api/write)
 Этот эндпоинт позволяет авторизованным пользователям записывать пары ключ-значение в базу данных Tarantool, причем ключ только типа `string`, значение только `scalar (bool, int, float, string)`.
 Запись происходит асинхронно, с помощью батчей (реализованы вручную в `./internal/logic/data.go`).
 Пример запроса:
@@ -106,7 +113,7 @@ Content-Type: application/json
     "status": "Not authorized, wrong header format"
 }
 ```
-При попытке отправки просроченого JWT токена получим ошнибку, статус `401 Unauthorized`  (просроченная сессия удаляется из БД):
+При попытке отправки просроченого JWT токена получим ошнибку, статус `401 Unauthorized`  (просроченная сессия удаляется из БД и необходимо заново авторизоваться):
 ```json
 {
     "status": "Not authorized: session expired"
@@ -138,13 +145,61 @@ Content-Type: application/json
     "status": "Bad Request: invalid value type for key key5 (only scalar values are allowed)"
 }
 ```
-При ошибке записи в БД (чего добиться скорее всего не получится), выдастся ошибка, статус `400, Bad Request`:
+При ошибке записи в БД (чего добиться скорее всего не получится), выдастся ошибка, статус `400 Bad Request`:
 ```json
 {
     "status": "Failed to write batch. Errors: (key: 'key1', error: 'error1')"
 }
 ```
-
+При ошибке записи в БД (чего добиться скорее всего не получится), выдастся ошибка, статус `401 Unauthorized`:
+```json
+{
+    "status": "Not authorized: failed to query session: using closed connection (0x4001)"
+}
+```
+### 3. Чтение данных (POST /api/read)
+Этот эндпоинт позволяет авторизованным пользователям читать пары ключ-значение из базы данных Tarantool по указанным ключам. Ключи только типа "string".
+Чтение происходит асинхронно, с помощью батчей (реализованы вручную в `./internal/logic/data.go`).
+Пример запроса:
+```json
+POST /api/login HTTP/1.1
+Host: localhost:8080
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJOYW1lIjoiYWRtaW4iLCJleHAiOjE3MjQxMTExNDV9.0kn4u7X-JhO-eHZf8IOc_zWKONL42-tvFMbKkD1fibo
+Content-Type: application/json
+{
+    "keys": ["key1","key2","key3","key4","key5","key6","key7","key8"]
+}
+```
+Ответ (при том, что в БД есть только ключи "key1", "key2", "key3", "key4"), статус `200 Ok`:
+```json
+{
+    "data": {
+        "key1": "This is a string",
+        "key2": 321,
+        "key3": true,
+        "key4": 123.45678901234568
+    }
+}
+```
+Т.е. API является устойчивой к наличию неправильных наименований ключей.
+При несоблюдении типов в запросе получим ошибку, статус `400 Bad Request`:
+```json
+{
+    "status": "Bad Request"
+}
+```
+При ошибки чтения из БД (чего скорее всего не получится добиться), получим ошибку, статус `500 Internal Server Error`:
+```json
+{
+  "status": "Failed to read batch. Errors: [key: key3, error: error1]"
+}
+```
+При ошибке записи в БД (чего добиться скорее всего не получится), выдастся ошибка, статус `401 Unauthorized`:
+```json
+{
+    "status": "Not authorized: failed to query session: using closed connection (0x4001)"
+}
+```
   
 
 
