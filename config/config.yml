@@ -1,0 +1,4 @@
+tarantool:
+  host: tarantool
+  port: 3301
+secret_key: secret_key

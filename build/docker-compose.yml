@@ -1,0 +1,15 @@
+services:
+  tarantool:
+    build: 
+      dockerfile: dockerfile-tarantool
+    ports:
+      - "3301:3301"
+
+  intern:
+    build:
+      context: ../ # Путь к корневой папке проекта
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      - tarantool
