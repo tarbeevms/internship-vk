@@ -201,6 +201,30 @@ Content-Type: application/json
     "status": "Not authorized: failed to query session: using closed connection (0x4001)"
 }
 ```
+При попытке отправки неккоректного JWT токена получим ошибку, статус `401 Unauthorized`:
+```json
+{
+    "status": "Not authorized: signature is invalid"
+}
+```
+При попытке отправки неккоректного Authorization заголовка получим ошибку, статус `401 Unauthorized`:
+```json
+{
+    "status": "Not authorized, wrong header format"
+}
+```
+При попытке отправки просроченого JWT токена получим ошнибку, статус `401 Unauthorized`  (просроченная сессия удаляется из БД и необходимо заново авторизоваться):
+```json
+{
+    "status": "Not authorized: session expired"
+}
+```
+При попытке отправки несуществующей (или же уже удаленной) сессии получим ошибку, статус `401 Unauthorized`:
+```json
+{
+    "status": "Not authorized: session not found"
+}
+```
   
 
 
