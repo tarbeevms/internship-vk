@@ -8,7 +8,7 @@ import (
 
 // GetUserByUsername ищет пользователя по username в Tarantool
 func (ur *UserRepository) GetUserByUsername(username string) (*LoginRequest, error) {
-	resp, err := ur.tConn.Select("users", "primary", 0, 1, tarantool.IterEq, []interface{}{username})
+	resp, err := ur.tConn.SelectAsync("users", "primary", 0, 1, tarantool.IterEq, []interface{}{username}).Get()
 	if err != nil {
 		return nil, err
 	}

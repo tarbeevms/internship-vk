@@ -14,13 +14,13 @@ func (h *HandlerLayer) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	user, err := h.LogicLayer.VerifyUserCredentials(req.Username, req.Password)
-	if err != nil || user == nil {
-		io.SendError(w, "Invalid username or password", http.StatusUnauthorized)
+	if err != nil {
+		io.SendError(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
 	token, err := h.LogicLayer.CreateSession(user.Username)
 	if err != nil {
-		io.SendError(w, "Failed to create session or session already exists", http.StatusUnauthorized)
+		io.SendError(w, "Failed to create (rewrite) session", http.StatusUnauthorized)
 		return
 	}
 	io.WriteJSON(w, http.StatusOK, users.LoginResponse{Token: token})

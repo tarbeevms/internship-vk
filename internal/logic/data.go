@@ -16,7 +16,7 @@ func (ll *LogicLayer) WriteDataBatch(data map[string]interface{}) (err error) {
 	if len(batchErr) != 0 {
 		var errorMessages []string
 		for key, batchError := range batchErr {
-			errorMessages = append(errorMessages, fmt.Sprintf("(key: %s, error: %v)", key, batchError))
+			errorMessages = append(errorMessages, fmt.Sprintf("(key: '%s', error: '%v') ", key, batchError))
 		}
 		return fmt.Errorf("Failed to write batch. Errors: %v", errorMessages)
 	}

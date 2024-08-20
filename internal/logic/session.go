@@ -69,7 +69,7 @@ func (ll *LogicLayer) CreateSession(username string) (string, error) {
 	// Сохранение сессии в базе данных
 	err = ll.SessionRepo.AddSession(newSession)
 	if err != nil {
-		return "", fmt.Errorf("failed to store session, %w", err)
+		return "", fmt.Errorf("failed to write (rewrite) session, %w", err)
 	}
 	return accessToken, nil
 }

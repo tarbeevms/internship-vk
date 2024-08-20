@@ -4,8 +4,11 @@ box.cfg{
 }
 
 
-box.schema.user.create('root', {password = 'root'})
-box.schema.user.grant('root', 'read,write,execute', 'universe')
+if not box.schema.user.exists('root') then
+    -- Создаем пользователя только если его нет
+    box.schema.user.create('root', {password = 'root'})
+    box.schema.user.grant('root', 'read,write,execute', 'universe')
+end
 
 -- Функция для создания спейсов
 local function create_spaces()
